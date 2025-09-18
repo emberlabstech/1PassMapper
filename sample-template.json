@@ -1,0 +1,7 @@
+{
+  "item1": "[[sql.host]]",
+  "item2": "[[sql.user]]",
+  "item3": "[[sql.pass]]",
+  "item4": "[[host.domain]]",
+  "item5": "[[cred.UNKNOWN]]"
+}

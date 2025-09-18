@@ -1,0 +1,15 @@
+{
+  "sql": {
+	"host": "some.domain",
+	"port": "3306",
+	"user": "root",
+	"pass": "someAwesomePassword"
+  },
+  "host": {
+	"domain": "myCoolDomain.com",
+	"port": "443",
+	"certKey": "certificate.key",
+	"cert": "certificate.pem",
+	"certpass": "myKeyPassword"
+  }
+}
