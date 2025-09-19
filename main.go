@@ -22,7 +22,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-	
+
 	"github.com/tidwall/gjson"
 )
 
@@ -35,7 +35,7 @@ func main() {
 	inFile := flag.String("in", "", "Input file path")
 	outFile := flag.String("out", "", "Output file path")
 	flag.Parse()
-	
+
 	// If infile and outfile is missing, complain...
 	if *inFile == "" || *outFile == "" {
 		failf("missing required flags: -in <file> and -out <file> are required")
@@ -44,7 +44,7 @@ func main() {
 	if *ij == "" && (*vault == "" || *item == "") {
 		failf("missing required flags: -vault <name> and -item <name> are required for 1Password.")
 	}
-	
+
 	// Decide token: use -token if provided; otherwise try ~/.1passtoken
 	token := strings.TrimSpace(*pass)
 	if token == "" {
@@ -55,17 +55,17 @@ func main() {
 			os.Exit(1)
 		}
 	}
-	
+
 	// Read input file
 	input, err := os.ReadFile(*inFile)
 	if err != nil {
 		failf("failed to read input file: %v", err)
 	}
-	
+
 	// If we read creds from the local file, ignore 1Pass.
 	err = nil
 	var itemJSON []byte
-	
+
 	if *ij != "" {
 		itemJSON, err = os.ReadFile(*ij)
 		if err != nil {
@@ -83,16 +83,16 @@ func main() {
 		}
 		itemJSON = []byte(onePjson)
 	}
-	
+
 	// // Extract the custom field "json" (as a string)
 	// jsonPayload, err := extractJSONField(itemJSON)
 	// if err != nil {
 	// 	failf("failed to extract field \"json\" from 1Password item: %v", err)
 	// }
-	
+
 	// Replace [[path]] occurrences with values from jsonPayload using gjson
 	output := replaceTagsWithJSONValues(string(input), string(itemJSON))
-	
+
 	// Write output file
 	if err := os.WriteFile(*outFile, []byte(output), 0o644); err != nil {
 		failf("failed to write output file: %v", err)
@@ -106,20 +106,20 @@ func fetchItemJSON(token, vault, item string) ([]byte, error) {
 	if _, err := exec.LookPath("op"); err != nil {
 		return nil, errors.New("1Password CLI 'op' not found on PATH")
 	}
-	
+
 	cmd := exec.Command("op", "item", "get", "--vault", vault, "--format", "json", item)
-	
+
 	// In Service Account mode, token is provided as env var OP_SERVICE_ACCOUNT_TOKEN
 	if token != "" {
 		env := os.Environ()
 		env = append(env, "OP_SERVICE_ACCOUNT_TOKEN="+token)
 		cmd.Env = env
 	}
-	
+
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
-	
+
 	if err := cmd.Run(); err != nil {
 		msg := strings.TrimSpace(stderr.String())
 		if msg == "" {
@@ -127,7 +127,7 @@ func fetchItemJSON(token, vault, item string) ([]byte, error) {
 		}
 		return nil, fmt.Errorf("op item get failed: %s", msg)
 	}
-	
+
 	return stdout.Bytes(), nil
 }
 
@@ -152,7 +152,7 @@ func extractJSONField(opItemJSON []byte) (string, error) {
 	if v := gjson.GetBytes(opItemJSON, "notesPlain"); v.Exists() && looksLikeJSON(v.Str) {
 		return v.Str, nil
 	}
-	
+
 	return "", errors.New(`could not find a field named "json" in the item`)
 }
 
@@ -165,10 +165,10 @@ func replaceTagsWithJSONValues(input string, jsonPayload string) string {
 		println("Unable to parse input JSON.")
 		os.Exit(1)
 	}
-	
+
 	// Matches [[anything-but-brackets]] capturing the inner path in group 1
 	re := regexp.MustCompile(`\[\[([^\[\]]+)\]\]`)
-	
+
 	// We need access to the captured group, so we can't just use ReplaceAllString.
 	for _, loc := range re.FindAllStringSubmatch(input, -1) {
 		val := gjson.Get(jsonPayload, loc[1])
@@ -176,7 +176,7 @@ func replaceTagsWithJSONValues(input string, jsonPayload string) string {
 			input = strings.ReplaceAll(input, loc[0], val.String())
 		}
 	}
-	
+
 	return input
 }
 

@@ -27,6 +27,11 @@ sources for the same configuration file using for example environment as a diffe
 The format of the JSON source file is the same whether it's stored in the local file or 
 inside the JSON field in 1Password. 
 
+## Application prerequisite
+
+The Onepass CLI app must be installed on the machine. 
+
+
 ## 1Password config & setup
 
 1. Create an app token on 1Password.
