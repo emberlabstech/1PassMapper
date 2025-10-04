@@ -26,11 +26,14 @@ import (
 	"github.com/tidwall/gjson"
 )
 
+var prefix = ""
+
 func main() {
 	tokenFile := "./1passtoken"
 
 	// Removed -user flag
 	tFile := flag.String("tokenfile", "", "Alternate token file to use.")
+	pfx := flag.String("prefix", "", "A path prefix to be added at the start of all tag paths")
 	ij := flag.String("injson", "", "Input JSON source file in case you do not want to use 1Password")
 	pass := flag.String("token", "", "1Password Service Account token (optional; if empty, read from ~/.1passtoken)")
 	vault := flag.String("vault", "", "1Password vault name")
@@ -43,7 +46,10 @@ func main() {
 	if *tFile != "" {
 		tokenFile = *tFile
 	}
-
+	// A prefix has been specified? ( [[{nil|pfx.}path]] )
+	if *pfx != "" {
+		prefix = *pfx + "."
+	}
 	// If infile and outfile is missing, complain...
 	if *inFile == "" || *outFile == "" {
 		failf("missing required flags: -in <file> and -out <file> are required")
@@ -179,7 +185,7 @@ func replaceTagsWithJSONValues(input string, jsonPayload string) string {
 
 	// We need access to the captured group, so we can't just use ReplaceAllString.
 	for _, loc := range re.FindAllStringSubmatch(input, -1) {
-		val := gjson.Get(jsonPayload, loc[1])
+		val := gjson.Get(jsonPayload, prefix+loc[1])
 		if val.Exists() {
 			input = strings.ReplaceAll(input, loc[0], val.String())
 		}

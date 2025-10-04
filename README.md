@@ -42,18 +42,19 @@ The Onepass CLI app must be installed on the machine.
 
 ## Input parameters to the application
 
-
     Usage of 1PassMapper:
-      -tokenfile    string  The name of the 1pass token file to use, if different from teh default (~/.1passtoken)  
-      -injson 	string	Input JSON source file in case you do not want to use 1Password
-                            Supplying this option will bypass the use of 1Password, and use the file 
-                            as source of credentials. 
     
-      -in 		string	Input file path - eg. "my-config-template.json"
-      -out 		string	Output file path - eg. "config.json"
-      -vault 	string	1Password vault name - eg. "CICD"
-      -item 	string	1Password item name (source of JSON) - eg. "MySecretCollection"
-      -token 	string	1Password Service Account token (optional; if empty, read from ~/.1passtoken)
+    -prefix     string  The prefix to use for all paths (default: ""), such as "dev" or other dot-notation path prefix. 
+    -tokenfile  string  The name of the 1pass token file to use, if different from teh default (~/.1passtoken)  
+    -injson     string  Input JSON source file in case you do not want to use 1Password
+                        Supplying this option will bypass the use of 1Password, and use the file 
+                        as source of credentials. 
+    
+    -in         string  Input file path - eg. "my-config-template.json"
+    -out        string  Output file path - eg. "config.json"
+    -vault      string  1Password vault name - eg. "CICD"
+    -item       string  1Password item name (source of JSON) - eg. "MySecretCollection"
+    -token      string  1Password Service Account token (optional; if empty, read from ~/.1passtoken)
 
 
 ## Tags - How they are designed and works
@@ -65,27 +66,57 @@ The important part is the tags that will be used to replace them, as they are pl
 
 The format is simple - All tags starts with a `[[` and ends with a `]]`, and what is inside, is the json path to the value.
 
-The format with double `[[...]]` has been deliberately chosen not to conflict with CSS, JSON, or JavaScript and many other formats or languages. 
+The format with double `[[...]]` has been deliberately chosen not to conflict with CSS, JSON, or JavaScript and many other formats or languages.
+
+Please note that the -prefix <path>, will prepend the tags path by the dot-notation string you provide.  
+If you provide a `-prefix dev`, this would mean that `[[some.path]]` in your template becomes `[[dev.some.path]]` when referencing the credentials source JSON. 
+
+Using the -prefix, thus allows you to build make files and other pipelines that are "environment" aware in a simple way.  
 
 Inside a json, an array, such as:
 
 ```json
 {
-  "values": [ "abc", "def", "ghi" ],
-  "nameList": [
-		{
-			"name": "jane"
-		},
-		{
-			"name":  "joe"
-		}
-	]
+  "dev": {
+      "values": [
+        "abc",
+        "def",
+        "ghi"
+      ],
+      "nameList": [
+        {
+          "name": "jane"
+        },
+        {
+          "name": "joe"
+        }
+      ]
+  },
+  "prod": {
+    "values": [
+      "jlk",
+      "mno",
+      "pqr"
+    ],
+    "nameList": [
+      {
+        "name": "mike"
+      },
+      {
+        "name": "perry"
+      }
+    ]
+  }
 }
 ```
 
 Accessing the "def", would be values.1, as the indexes are 0-based, and the corresponding tag would be:
-`[[values.1]]`, likewise, `[[nameList.1.name]]` would return "joe".
+`[[dev.values.1]]`, likewise, `[[dev.nameList.1.name]]` would return "joe".
 
+However, if you want to use a "generic" template, you could use the format:   
+`[[values.1]]`, likewise, `[[nameList.1.name]]` 
+
+The `-prefix dev` would return "joe" for `[[nameList.1.name]]`, while `-prefix prod` would return "perry".
 
 ## The "injson" / 1Password file
 
