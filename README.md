@@ -42,18 +42,19 @@ The Onepass CLI app must be installed on the machine.
 
 ## Input parameters to the application
 
-```Plain Text
-Usage of 1PassMapper:
-  -injson 	string	Input JSON source file in case you do not want to use 1Password
-			Supplying this option will bypass the use of 1Password, and use the file 
-			as source of credentials. 
 
-  -in 		string	Input file path - eg. "my-config-template.json"
-  -out 		string	Output file path - eg. "config.json"
-  -vault 	string	1Password vault name - eg. "CICD"
-  -item 	string	1Password item name (source of JSON) - eg. "MySecretCollection"
-  -token 	string	1Password Service Account token (optional; if empty, read from ~/.1passtoken)
-```
+    Usage of 1PassMapper:
+      -tokenfile    string  The name of the 1pass token file to use, if different from teh default (~/.1passtoken)  
+      -injson 	string	Input JSON source file in case you do not want to use 1Password
+                            Supplying this option will bypass the use of 1Password, and use the file 
+                            as source of credentials. 
+    
+      -in 		string	Input file path - eg. "my-config-template.json"
+      -out 		string	Output file path - eg. "config.json"
+      -vault 	string	1Password vault name - eg. "CICD"
+      -item 	string	1Password item name (source of JSON) - eg. "MySecretCollection"
+      -token 	string	1Password Service Account token (optional; if empty, read from ~/.1passtoken)
+
 
 ## Tags - How they are designed and works
 
@@ -63,6 +64,9 @@ allowing this solution would equally well apply to plain text documents, yml or 
 The important part is the tags that will be used to replace them, as they are placeholders.
 
 The format is simple - All tags starts with a `[[` and ends with a `]]`, and what is inside, is the json path to the value.
+
+The format with double `[[...]]` has been deliberately chosen not to conflict with CSS, JSON, or JavaScript and many other formats or languages. 
+
 Inside a json, an array, such as:
 
 ```json

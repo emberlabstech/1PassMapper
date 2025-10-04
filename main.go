@@ -27,7 +27,10 @@ import (
 )
 
 func main() {
+	tokenFile := "./1passtoken"
+
 	// Removed -user flag
+	tFile := flag.String("tokenfile", "", "Alternate token file to use.")
 	ij := flag.String("injson", "", "Input JSON source file in case you do not want to use 1Password")
 	pass := flag.String("token", "", "1Password Service Account token (optional; if empty, read from ~/.1passtoken)")
 	vault := flag.String("vault", "", "1Password vault name")
@@ -35,6 +38,11 @@ func main() {
 	inFile := flag.String("in", "", "Input file path")
 	outFile := flag.String("out", "", "Output file path")
 	flag.Parse()
+
+	// Alt token file specified?
+	if *tFile != "" {
+		tokenFile = *tFile
+	}
 
 	// If infile and outfile is missing, complain...
 	if *inFile == "" || *outFile == "" {
@@ -48,10 +56,10 @@ func main() {
 	// Decide token: use -token if provided; otherwise try ~/.1passtoken
 	token := strings.TrimSpace(*pass)
 	if token == "" {
-		if t, err := readTokenFromHomeFile(".1passtoken"); err == nil && t != "" {
+		if t, err := readTokenFromHomeFile(tokenFile); err == nil && t != "" {
 			token = t
 		} else {
-			fmt.Printf("Can not read the ~/.1passtoken")
+			fmt.Printf("Can not read the file %s\n", tokenFile)
 			os.Exit(1)
 		}
 	}
