@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -27,11 +26,20 @@ import (
 )
 
 var prefix = ""
+var verbose = 0
 
 func main() {
-	tokenFile := "~/.1passtoken"
+	// Get the home dir, and attach the default 1passtoken file.
+	home, err := os.UserHomeDir()
+	if err != nil {
+		println("Can not read home directory.")
+		os.Exit(1)
+	}
+	tokenFile := home + "/.1passtoken"
 
 	// Removed -user flag
+	verb := flag.Bool("v", false, "Be verbose about translations")
+	verb1 := flag.Bool("vv", false, "Be even more verbose about translations")
 	tFile := flag.String("tokenfile", "", "Alternate token file to use.")
 	pfx := flag.String("prefix", "", "A path prefix to be added at the start of all tag paths")
 	ij := flag.String("injson", "", "Input JSON source file in case you do not want to use 1Password")
@@ -42,6 +50,13 @@ func main() {
 	outFile := flag.String("out", "", "Output file path")
 	flag.Parse()
 
+	// Verbose?
+	if *verb {
+		verbose = 1
+	}
+	if *verb1 {
+		verbose = 2
+	}
 	// Alt token file specified?
 	if *tFile != "" {
 		tokenFile = *tFile
@@ -185,9 +200,24 @@ func replaceTagsWithJSONValues(input string, jsonPayload string) string {
 
 	// We need access to the captured group, so we can't just use ReplaceAllString.
 	for _, loc := range re.FindAllStringSubmatch(input, -1) {
-		val := gjson.Get(jsonPayload, prefix+loc[1])
+		tag := loc[0]
+		path := prefix + loc[1]
+		val := gjson.Get(jsonPayload, path)
 		if val.Exists() {
-			input = strings.ReplaceAll(input, loc[0], val.String())
+			switch verbose {
+			case 1:
+				println("Translated    :", tag)
+			case 2:
+				println("Translated    :", tag, " --> ", val.String())
+			default:
+			}
+			input = strings.ReplaceAll(input, tag, val.String())
+		} else {
+			switch verbose {
+			case 1, 2:
+				println("Not Translated:", tag)
+			default:
+			}
 		}
 	}
 
@@ -212,12 +242,7 @@ func failf(format string, args ...any) {
 // readTokenFromHomeFile reads a token from a file in the user's home directory.
 // Returns the trimmed token or an error if the file can't be read.
 func readTokenFromHomeFile(filename string) (string, error) {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return "", err
-	}
-	path := filepath.Join(home, filename)
-	b, err := os.ReadFile(path)
+	b, err := os.ReadFile(filename)
 	if err != nil {
 		return "", err
 	}
