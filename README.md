@@ -44,6 +44,8 @@ The Onepass CLI app must be installed on the machine.
 
     Usage of 1PassMapper:
     
+    -v                  Increase the verbosity to show what tags are translated or not.
+    -vv                 INSECURE!! Increase the verbosity to show what tags are translated or not, adding the value replacing the tag. (only use for debug!)
     -prefix     string  The prefix to use for all paths (default: ""), such as "dev" or other dot-notation path prefix. 
     -tokenfile  string  The name of the 1pass token file to use, if different from teh default (~/.1passtoken)  
     -injson     string  Input JSON source file in case you do not want to use 1Password
