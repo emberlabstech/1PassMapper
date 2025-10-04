@@ -29,7 +29,7 @@ import (
 var prefix = ""
 
 func main() {
-	tokenFile := "./1passtoken"
+	tokenFile := "~/.1passtoken"
 
 	// Removed -user flag
 	tFile := flag.String("tokenfile", "", "Alternate token file to use.")
