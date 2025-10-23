@@ -208,17 +208,39 @@ func replaceTagsWithJSONValues(input string, jsonPayload string) string {
 	// We need access to the captured group, so we can't just use ReplaceAllString.
 	for _, loc := range re.FindAllStringSubmatch(input, -1) {
 		tag := loc[0]
-		path := prefix + loc[1]
-		val := gjson.Get(jsonPayload, path)
+		path := loc[1]
+		repval := ""
+		mode := 0
+
+		// ":" tag in the path? Want to inject a full JSON structure?
+		if strings.Contains(loc[1], ":") {
+			tparts := strings.SplitN(loc[1], ":", 2)
+			path = tparts[1]
+			switch tparts[0] {
+			case "raw":
+				mode = 1
+			default:
+			}
+		}
+
+		// Switch the modes here.
+		val := gjson.Get(jsonPayload, prefix+path)
+		switch mode {
+		case 1:
+			repval = val.Raw
+		default:
+			repval = val.Str
+		}
+
 		if val.Exists() {
 			switch verbose {
 			case 1:
 				println("Translated    :", tag)
 			case 2:
-				println("Translated    :", tag, " --> ", val.String())
+				println("Translated    :", tag, " --> ", repval)
 			default:
 			}
-			input = strings.ReplaceAll(input, tag, val.String())
+			input = strings.ReplaceAll(input, tag, repval)
 		} else {
 			switch verbose {
 			case 1, 2:

@@ -30,6 +30,7 @@ inside the JSON field in 1Password.
 ## Changelog
 
 ```plain text
+1.3.0   2025-10-23  Added support for type prefix in paths. 
 1.2.0   2025-10-23  Added support for multiple 1Pass source items, 
                     allowing the use of multiple 1pass items to be applied in 1 pass.    
 1.1.0   2025-09-10  Added support for `-prefix`
@@ -81,6 +82,9 @@ The format with double `[[...]]` has been deliberately chosen not to conflict wi
 
 Please note that the -prefix <path>, will prepend the tags path by the dot-notation string you provide.  
 If you provide a `-prefix dev`, this would mean that `[[some.path]]` in your template becomes `[[dev.some.path]]` when referencing the credentials source JSON. 
+
+if a path is prefixed inside the tag with `raw:`, whatever is in the JSON will be inserted as-is.  
+If you have say an array of items, such as `[[raw:path.to.value]]`, then anything beyond that "value" would be inserted.
 
 Using the -prefix, thus allows you to build make files and other pipelines that are "environment" aware in a simple way.  
 
