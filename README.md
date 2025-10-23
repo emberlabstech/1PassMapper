@@ -27,6 +27,15 @@ sources for the same configuration file using for example environment as a diffe
 The format of the JSON source file is the same whether it's stored in the local file or 
 inside the JSON field in 1Password. 
 
+## Changelog
+
+```plain text
+1.2.0   2025-10-23  Added support for multiple 1Pass source items, 
+                    allowing the use of multiple 1pass items to be applied in 1 pass.    
+1.1.0   2025-09-10  Added support for `-prefix`
+1.0.0               Original release
+```
+
 ## Application prerequisite
 
 The Onepass CLI app must be installed on the machine. 
@@ -55,9 +64,9 @@ The Onepass CLI app must be installed on the machine.
     -in         string  Input file path - eg. "my-config-template.json"
     -out        string  Output file path - eg. "config.json"
     -vault      string  1Password vault name - eg. "CICD"
-    -item       string  1Password item name (source of JSON) - eg. "MySecretCollection"
+    -item       string  1Password item name or names (name1,name2,...) (source of JSON) - eg. "MySecretCollection"
     -token      string  1Password Service Account token (optional; if empty, read from ~/.1passtoken)
-
+    -V                  Display version.
 
 ## Tags - How they are designed and works
 

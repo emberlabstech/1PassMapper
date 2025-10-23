@@ -25,6 +25,7 @@ import (
 	"github.com/tidwall/gjson"
 )
 
+var version = "1.2.0"
 var prefix = ""
 var verbose = 0
 
@@ -38,6 +39,7 @@ func main() {
 	tokenFile := home + "/.1passtoken"
 
 	// Removed -user flag
+	ver := flag.Bool("V", false, "Display version and quit")
 	verb := flag.Bool("v", false, "Be verbose about translations")
 	verb1 := flag.Bool("vv", false, "Be even more verbose about translations")
 	tFile := flag.String("tokenfile", "", "Alternate token file to use.")
@@ -45,11 +47,16 @@ func main() {
 	ij := flag.String("injson", "", "Input JSON source file in case you do not want to use 1Password")
 	pass := flag.String("token", "", "1Password Service Account token (optional; if empty, read from ~/.1passtoken)")
 	vault := flag.String("vault", "", "1Password vault name")
-	item := flag.String("item", "", "1Password item name (source of JSON)")
+	item := flag.String("item", "", "1Password item name or names as a CSV list (name1,name2,...) (source of JSON)")
 	inFile := flag.String("in", "", "Input file path")
 	outFile := flag.String("out", "", "Output file path")
 	flag.Parse()
 
+	// Version?
+	if *ver {
+		println("Version :", version)
+		os.Exit(0)
+	}
 	// Verbose?
 	if *verb {
 		verbose = 1
@@ -100,30 +107,30 @@ func main() {
 		if err != nil {
 			failf("failed to read input JSON definition file: %v", err)
 		}
+		// Replace [[path]] occurrences with values from jsonPayload using gjson
+		input = []byte(replaceTagsWithJSONValues(string(input), string(itemJSON)))
 	} else {
-		// Retrieve 1Password item JSON via op CLI
-		onePdata, e := fetchItemJSON(token, *vault, *item)
-		if e != nil {
-			failf("failed to fetch 1Password item: %v", err)
+		// If the vault is a, separated list of vaults process each one of them in order against the input.
+		items := strings.Split(*item, ",")
+		for _, itemName := range items {
+			println("Processing", *vault, "/", itemName)
+			// Retrieve 1Password item JSON via op CLI
+			onePdata, e := fetchItemJSON(token, *vault, itemName)
+			if e != nil {
+				failf("failed to fetch 1Password item: %v", err)
+			}
+			onePjson, e := extractJSONField(onePdata)
+			if e != nil {
+				failf("failed to extract field \"json\" from 1Password item: %v", err)
+			}
+			itemJSON = []byte(onePjson)
+			// Replace [[path]] occurrences with values from jsonPayload using gjson
+			input = []byte(replaceTagsWithJSONValues(string(input), string(itemJSON)))
 		}
-		onePjson, e := extractJSONField(onePdata)
-		if e != nil {
-			failf("failed to extract field \"json\" from 1Password item: %v", err)
-		}
-		itemJSON = []byte(onePjson)
 	}
 
-	// // Extract the custom field "json" (as a string)
-	// jsonPayload, err := extractJSONField(itemJSON)
-	// if err != nil {
-	// 	failf("failed to extract field \"json\" from 1Password item: %v", err)
-	// }
-
-	// Replace [[path]] occurrences with values from jsonPayload using gjson
-	output := replaceTagsWithJSONValues(string(input), string(itemJSON))
-
 	// Write output file
-	if err := os.WriteFile(*outFile, []byte(output), 0o644); err != nil {
+	if err := os.WriteFile(*outFile, []byte(input), 0o644); err != nil {
 		failf("failed to write output file: %v", err)
 	}
 }
