@@ -3,5 +3,4 @@
 *.log
 .idea
 config.json
-
-
+/1PassMapper

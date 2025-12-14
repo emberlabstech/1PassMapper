@@ -13,19 +13,20 @@
 package main
 
 import (
-	"bytes"
+	"context"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
 	"os"
-	"os/exec"
 	"regexp"
 	"strings"
 
+	onepassword "github.com/1password/onepassword-sdk-go"
 	"github.com/tidwall/gjson"
 )
 
-var version = "1.2.0"
+var version = "1.4.0"
 var prefix = ""
 var verbose = 0
 
@@ -117,15 +118,16 @@ func main() {
 			// Retrieve 1Password item JSON via op CLI
 			onePdata, e := fetchItemJSON(token, *vault, itemName)
 			if e != nil {
-				failf("failed to fetch 1Password item: %v", err)
+				failf("failed to fetch 1Password item: %v for %s:%s", e, *vault, itemName)
 			}
+
 			onePjson, e := extractJSONField(onePdata)
 			if e != nil {
 				failf("failed to extract field \"json\" from 1Password item: %v", err)
 			}
-			itemJSON = []byte(onePjson)
+			itemJSON := string(onePjson)
 			// Replace [[path]] occurrences with values from jsonPayload using gjson
-			input = []byte(replaceTagsWithJSONValues(string(input), string(itemJSON)))
+			input = []byte(replaceTagsWithJSONValues(string(input), itemJSON))
 		}
 	}
 
@@ -135,58 +137,125 @@ func main() {
 	}
 }
 
-// fetchItemJSON invokes the 1Password CLI to get an item in JSON form.
-// For Service Accounts, token should be the OP_SERVICE_ACCOUNT_TOKEN.
+// fetchItemJSON uses the 1Password Service Accounts SDK to fetch an item and return its JSON bytes.
 func fetchItemJSON(token, vault, item string) ([]byte, error) {
-	// Ensure op CLI exists
-	if _, err := exec.LookPath("op"); err != nil {
-		return nil, errors.New("1Password CLI 'op' not found on PATH")
+	fmt.Printf("Retreiving data from 1Pass for %s:%s\n", vault, item)
+
+	if strings.TrimSpace(token) == "" {
+		return nil, fmt.Errorf("fetchItemJSON: empty token")
+	}
+	if verbose > 0 {
+		fmt.Fprintf(os.Stderr, "fetchItemJSON: vault=%q item=%q\n", vault, item)
 	}
 
-	cmd := exec.Command("op", "item", "get", "--vault", vault, "--format", "json", item)
+	ctx := context.Background()
 
-	// In Service Account mode, token is provided as env var OP_SERVICE_ACCOUNT_TOKEN
-	if token != "" {
-		env := os.Environ()
-		env = append(env, "OP_SERVICE_ACCOUNT_TOKEN="+token)
-		cmd.Env = env
+	client, err := onepassword.NewClient(
+		ctx,
+		onepassword.WithServiceAccountToken(token),
+		onepassword.WithIntegrationInfo("1PassMapper", version), // <-- required by SDK
+	)
+	if err != nil {
+		return nil, fmt.Errorf("fetchItemJSON: create 1Password client: %w", err)
 	}
 
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
+	// List vaults and find by Title (display name)
+	if verbose > 1 {
+		fmt.Fprintln(os.Stderr, "fetchItemJSON: listing vaults")
+	}
+	vaults, err := client.Vaults().List(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("fetchItemJSON: list vaults: %w", err)
+	}
+	if len(vaults) == 0 {
+		return nil, fmt.Errorf("fetchItemJSON: no vaults visible to this token")
+	}
 
-	if err := cmd.Run(); err != nil {
-		msg := strings.TrimSpace(stderr.String())
-		if msg == "" {
-			msg = err.Error()
+	var vaultID string
+	for _, v := range vaults {
+		if verbose > 1 {
+			fmt.Fprintf(os.Stderr, "fetchItemJSON: seen vault ID=%s Title=%q\n", v.ID, v.Title)
 		}
-		return nil, fmt.Errorf("op item get failed: %s", msg)
+		if v.Title == vault {
+			vaultID = v.ID
+			break
+		}
+	}
+	if vaultID == "" {
+		return nil, fmt.Errorf("fetchItemJSON: vault %q not found or not accessible", vault)
+	}
+	if verbose > 0 {
+		fmt.Fprintf(os.Stderr, "fetchItemJSON: using vaultID=%s for vault=%q\n", vaultID, vault)
 	}
 
-	return stdout.Bytes(), nil
+	// List items in that vault and find by Title
+	if verbose > 1 {
+		fmt.Fprintf(os.Stderr, "fetchItemJSON: listing items in vaultID=%s\n", vaultID)
+	}
+	items, err := client.Items().List(ctx, vaultID)
+	if err != nil {
+		return nil, fmt.Errorf("fetchItemJSON: list items in vault %q (id=%s): %w", vault, vaultID, err)
+	}
+	if len(items) == 0 {
+		return nil, fmt.Errorf("fetchItemJSON: no items visible in vault %q (id=%s)", vault, vaultID)
+	}
+
+	var itemID string
+	for _, it := range items {
+		if verbose > 1 {
+			fmt.Fprintf(os.Stderr, "fetchItemJSON: seen item ID=%s Title=%q\n", it.ID, it.Title)
+		}
+		if it.Title == item {
+			itemID = it.ID
+			break
+		}
+	}
+	if itemID == "" {
+		return nil, fmt.Errorf("fetchItemJSON: item %q not found in vault %q (id=%s)", item, vault, vaultID)
+	}
+	if verbose > 0 {
+		fmt.Fprintf(os.Stderr, "fetchItemJSON: using itemID=%s for item=%q\n", itemID, item)
+	}
+
+	// Get full item
+	full, err := client.Items().Get(ctx, vaultID, itemID)
+	if err != nil {
+		return nil, fmt.Errorf("fetchItemJSON: get item %q (id=%s) in vault %q (id=%s): %w",
+			item, itemID, vault, vaultID, err)
+	}
+
+	data, err := json.Marshal(full)
+	if err != nil {
+		return nil, fmt.Errorf("fetchItemJSON: marshal item %q (id=%s): %w", item, itemID, err)
+	}
+	if len(data) == 0 {
+		return nil, fmt.Errorf("fetchItemJSON: marshaled item %q (id=%s) to empty JSON", item, itemID)
+	}
+
+	if verbose > 1 {
+		fmt.Fprintf(os.Stderr, "fetchItemJSON: successfully fetched item %q (id=%s)\n", item, itemID)
+	}
+	return data, nil
 }
 
 // extractJSONField tries multiple likely locations to find a custom field named "json"
 // in the item JSON returned by "op item get --format json".
 // It returns the field's value as string.
 func extractJSONField(opItemJSON []byte) (string, error) {
-	// Try common locations for CLI v2:
-	// 1) fields array with label "json"
-	if v := gjson.GetBytes(opItemJSON, `fields.#(label=="json").value`); v.Exists() {
-		return v.Array()[0].Str, nil
+	fieldList := MapRaw(string(opItemJSON), "fields")
+	result := ""
+
+	// .fields: [ title: "json"? ]
+	if gjson.Get(string(opItemJSON), "fields").Raw != "" {
+		for _, field := range fieldList {
+			if gjson.Get(field, "title").Str == "json" {
+				result = gjson.Get(field, "value").Str
+			}
+		}
 	}
-	// 2) fields with id "json"
-	if v := gjson.GetBytes(opItemJSON, `fields.#(id=="json").value`); v.Exists() {
-		return v.Array()[0].Str, nil
-	}
-	// 3) sections[].fields[] with label "json"
-	if v := gjson.GetBytes(opItemJSON, `sections.#.fields.#(label=="json").value`); v.Exists() && len(v.Array()) > 0 {
-		return v.Array()[0].Str, nil
-	}
-	// 4) sometimes a note can hold JSON
-	if v := gjson.GetBytes(opItemJSON, "notesPlain"); v.Exists() && looksLikeJSON(v.Str) {
-		return v.Str, nil
+
+	if result != "" {
+		return result, nil
 	}
 
 	return "", errors.New(`could not find a field named "json" in the item`)
@@ -198,7 +267,7 @@ func replaceTagsWithJSONValues(input string, jsonPayload string) string {
 	// Pre-validate JSON to avoid repeated parse if it's malformed
 	if !gjson.Valid(jsonPayload) {
 		// If not valid JSON, no replacements will be possible. Return as-is.
-		println("Unable to parse input JSON.")
+		println("Unable to parse input JSON from 1Pass.")
 		os.Exit(1)
 	}
 
@@ -253,16 +322,6 @@ func replaceTagsWithJSONValues(input string, jsonPayload string) string {
 	return input
 }
 
-func looksLikeJSON(s string) bool {
-	s = strings.TrimSpace(s)
-	if s == "" {
-		return false
-	}
-	// Basic heuristic
-	return (strings.HasPrefix(s, "{") && strings.HasSuffix(s, "}")) ||
-		(strings.HasPrefix(s, "[") && strings.HasSuffix(s, "]"))
-}
-
 func failf(format string, args ...any) {
 	_, _ = fmt.Fprintf(os.Stderr, format+"\n", args...)
 	os.Exit(1)
@@ -280,4 +339,17 @@ func readTokenFromHomeFile(filename string) (string, error) {
 		return "", errors.New("token file is empty")
 	}
 	return token, nil
+}
+
+// MapRaw - Get a Json subtree as a map
+func MapRaw(json string, path string) map[string]string {
+	vals := make(map[string]string, 0)
+
+	result := gjson.Get(json, path)
+	result.ForEach(func(k, v gjson.Result) bool {
+		vals[k.String()] = v.Raw
+		return true // keep iterating
+	})
+
+	return vals
 }

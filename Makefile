@@ -9,11 +9,14 @@
 #   - BY: Credit must be given to the creator.
 #   - SA: Adaptations must be shared under the same terms.
 # 
+VERSION ?= 1.4.0
 
 all:
-	go get -u "github.com/tidwall/gjson"  
-	go build
+	go get -u "github.com/tidwall/gjson" 
+	go get -u "github.com/1password/onepassword-sdk-go"
+	go build -ldflags="-X 'main.version=$(VERSION)'" -o 1PassMapper
 	chmod 755 1PassMapper
 	strip 1PassMapper
 	mv 1PassMapper /bin/
+
 	

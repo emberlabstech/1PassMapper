@@ -30,16 +30,21 @@ inside the JSON field in 1Password.
 ## Changelog
 
 ```plain text
+1.4.0   2025-12-14  Removed the dependency on CLI 1pass for native SDK support.
+
 1.3.0   2025-10-23  Added support for type prefix in paths. 
+
 1.2.0   2025-10-23  Added support for multiple 1Pass source items, 
                     allowing the use of multiple 1pass items to be applied in 1 pass.    
+
 1.1.0   2025-09-10  Added support for `-prefix`
+
 1.0.0               Original release
 ```
 
 ## Application prerequisite
 
-The Onepass CLI app must be installed on the machine. 
+None specific.  
 
 
 ## 1Password config & setup
