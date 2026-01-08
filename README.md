@@ -30,6 +30,9 @@ inside the JSON field in 1Password.
 ## Changelog
 
 ```plain text
+1.5.0   2026-01-08  Introduced the -fieldcopy, copying a field's content to file,
+                    supporting items like certificate files and keys from 1Pass. 
+ 
 1.4.0   2025-12-14  Removed the dependency on CLI 1pass for native SDK support.
 
 1.3.0   2025-10-23  Added support for type prefix in paths. 
@@ -59,9 +62,11 @@ None specific.
 
     Usage of 1PassMapper:
     
+    -version            Display version.
     -v                  Increase the verbosity to show what tags are translated or not.
     -vv                 INSECURE!! Increase the verbosity to show what tags are translated or not, adding the value replacing the tag. (only use for debug!)
     -prefix     string  The prefix to use for all paths (default: ""), such as "dev" or other dot-notation path prefix. 
+    -token      string  1Password Service Account token (optional; if empty, read from ~/.1passtoken)
     -tokenfile  string  The name of the 1pass token file to use, if different from teh default (~/.1passtoken)  
     -injson     string  Input JSON source file in case you do not want to use 1Password
                         Supplying this option will bypass the use of 1Password, and use the file 
@@ -71,8 +76,8 @@ None specific.
     -out        string  Output file path - eg. "config.json"
     -vault      string  1Password vault name - eg. "CICD"
     -item       string  1Password item name or names (name1,name2,...) (source of JSON) - eg. "MySecretCollection"
-    -token      string  1Password Service Account token (optional; if empty, read from ~/.1passtoken)
-    -V                  Display version.
+    -fieldcopy  string  Copy the contents of the field name in string to the output file.
+
 
 ## Tags - How they are designed and works
 

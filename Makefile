@@ -9,7 +9,7 @@
 #   - BY: Credit must be given to the creator.
 #   - SA: Adaptations must be shared under the same terms.
 # 
-VERSION ?= 1.4.0
+VERSION ?= 1.5.0
 
 all:
 	go get -u "github.com/tidwall/gjson" 
