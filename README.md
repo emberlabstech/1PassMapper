@@ -30,6 +30,11 @@ inside the JSON field in 1Password.
 ## Changelog
 
 ```plain text
+1.6.0   2026-02-10  Added -fieldname <string>   Flag to indicate which field to use for json data.     
+                    Added -setvalue <string>    To set a field to a new value. 
+                    Added -setfile <filename>   To set a field to a new value from file.
+                    Added -fieldtypes           To list the available field types. 
+                     
 1.5.0   2026-01-08  Introduced the -fieldcopy, copying a field's content to file,
                     supporting items like certificate files and keys from 1Pass. 
  
@@ -62,27 +67,49 @@ None specific.
 
     Usage of 1PassMapper:
     
-    -version            Display version.
+    ## General ## 
+    -version || -V      Display version.
+
     -v                  Increase the verbosity to show what tags are translated or not.
     -vv                 INSECURE!! Increase the verbosity to show what tags are translated or not, adding the value replacing the tag. (only use for debug!)
-    -prefix     string  The prefix to use for all paths (default: ""), such as "dev" or other dot-notation path prefix. 
-    -token      string  1Password Service Account token (optional; if empty, read from ~/.1passtoken)
-    -tokenfile  string  The name of the 1pass token file to use, if different from teh default (~/.1passtoken)  
+
+    -prefix     string  The prefix to use for all paths (default: ""), such as "dev" or other dot-notation path prefix.
+                        if the tag path is x.y, the full reference tag path would become dev.x.y
+
     -injson     string  Input JSON source file in case you do not want to use 1Password
                         Supplying this option will bypass the use of 1Password, and use the file 
-                        as source of credentials. 
+                        as source of credentials. This could also be a generic source file for config details.
     
     -in         string  Input file path - eg. "my-config-template.json"
     -out        string  Output file path - eg. "config.json"
+
+    ## 1Password specific ## 
+    -token      string  1Password Service Account token (optional; if empty, read from ~/.1passtoken)
+    -tokenfile  string  The name of the 1pass token file to use, if different from the default (~/.1passtoken)  
     -vault      string  1Password vault name - eg. "CICD"
     -item       string  1Password item name or names (name1,name2,...) (source of JSON) - eg. "MySecretCollection"
+    -fieldname  string  Which field to use for json data as source. (default: json)
     -fieldcopy  string  Copy the contents of the field name in string to the output file.
 
+    ## Setting / updating a field value in 1Password ##
+    -fieldtype  string  The field type to use (Case sensitive - default: Text)
+                        One of:   Text      Concealed   CreditCardType    CreditCardNumber  
+                                  Phone     Url         Totp              Email   
+                                  Reference SshKey      Menu              MonthYear
+                                  Address   Date        Password (Concealed)
+
+    -setvalue   string  Copy the contents of string to the field
+    -setfile    string  Copy the contents of the filename to the field. 
+    
 
 ## Tags - How they are designed and works
 
-Note that the `sample–template.json` below can be any file or type of text format document not just confined to JSON, 
+Note that the `sample-  template.json` below can be any file or type of text format document not just confined to JSON, 
 allowing this solution would equally well apply to plain text documents, yml or any other kind of text-based documents.
+
+Also note that the -injson allows you to specify a source file to reference the tags agains, 
+and that this can be used as a common source of not just credentials, but configuration details, 
+as a single source of reference for one or more projects.  
 
 The important part is the tags that will be used to replace them, as they are placeholders.
 
@@ -135,8 +162,11 @@ Inside a json, an array, such as:
 }
 ```
 
-Accessing the "def", would be values.1, as the indexes are 0-based, and the corresponding tag would be:
-`[[dev.values.1]]`, likewise, `[[dev.nameList.1.name]]` would return "joe".
+Accessing the "def", would be values.1, as the indexes are 0-based, and the corresponding tags would be:
+`[[dev.values.0]]` --> "abc",  
+`[[dev.values.1]]` --> "def",  
+`[[dev.values.2]]` --> "ghi",   
+`[[dev.nameList.1.name]]` would return "joe".
 
 However, if you want to use a "generic" template, you could use the format:   
 `[[values.1]]`, likewise, `[[nameList.1.name]]` 
@@ -223,6 +253,4 @@ Noting that the path "cred.UNKNOWN" is not found in the source, and the tag will
 - EmberLabs (BY-SA) includes the following elements:
   - BY: Credit must be given to the creator.
   - SA: Adaptations must be shared under the same terms.
-
-
 
