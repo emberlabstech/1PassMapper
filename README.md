@@ -1,5 +1,12 @@
 # 1PassMapper
 
+## LEGAL EXCLUSION for California, US
+
+This software is legally barred from use by any natural, public or legal entity in 
+California, US, due to the legal situation in California requiring any device or software 
+to have age verification.
+
+
 ## Why? 
 
 This is a security thing, where you want to keep your credentials out of your git files 
