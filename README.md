@@ -7,7 +7,7 @@ California, US, due to the legal situation in California requiring any device or
 to have age verification.
 
 
-## Why? 
+## Why 1PassMapper? 
 
 This is a security thing, where you want to keep your credentials out of your git files 
 but when you deploy, you need to build the credentials and stick them into configuration 
@@ -37,6 +37,10 @@ inside the JSON field in 1Password.
 ## Changelog
 
 ```plain text
+1.6.1   2026-03-10  Added "global" prefix to ignore the prefix setting for a common "global" section.
+                    Splitting the app into a few files.
+                    Updated docs.   
+                    
 1.6.0   2026-02-10  Added -fieldname <string>   Flag to indicate which field to use for json data.     
                     Added -setvalue <string>    To set a field to a new value. 
                     Added -setfile <filename>   To set a field to a new value from file.
@@ -107,7 +111,31 @@ None specific.
 
     -setvalue   string  Copy the contents of string to the field
     -setfile    string  Copy the contents of the filename to the field. 
-    
+
+
+## -prefix
+
+The `-prefix <name>` allows for a tagset to be used in general terms, such as: 
+`[[value]]` but for different environments or use targets, such as that of: 
+
+`-prefix dev` would use the "dev" set of values, while `-prefix prod` would use the "prod" set of values.
+This enables a single template to be used for different environments.
+
+By setting the `-prefix dev`, the REAL key `[[value]]` in the template would effectively become: `[[dev.value]]` when looking up the source.   
+
+If a variable path begins with `global`, such as `[[global.value]]`, the section "global" will be used, ignoring the prefix. 
+This is useful for common values across environments, avoiding duplication of values, while keeping a single source of truth.
+
+```JSON
+{
+  "global": { "value": "A global value" },
+  "dev": { "value": "A development value" },
+  "stage": { "value": "A staging value" },
+  "prod": { "value": "A production value" }
+}
+```
+
+
 
 ## Tags - How they are designed and works
 
@@ -132,10 +160,20 @@ If you have say an array of items, such as `[[raw:path.to.value]]`, then anythin
 
 Using the -prefix, thus allows you to build make files and other pipelines that are "environment" aware in a simple way.  
 
+> **NB!**  
+> If the path starts with "global", such as `[[global.values.value1]]`, prefix will be ignored and the common global section will be used. 
+
 Inside a json, an array, such as:
 
 ```json
 {
+  "global": {
+    "values": {
+      "value1": "global.values.value1 instead of <prefix>.values.value1 (prefix ignored)",
+      "value2": "global.values.value1 instead of <prefix>.values.value2 (prefix ignored)",
+      "value3": "global.values.value1 instead of <prefix>.values.value3 (prefix ignored)"
+    }
+  },
   "dev": {
       "values": [
         "abc",
@@ -188,18 +226,52 @@ Example of a Json credentials file.
 
 ```json
 {
-  "sql": {
-	"host": "some.domain",
-	"port": "3306",
-	"user": "root",
-	"pass": "someAwesomePassword"
+  "global": {
+    "value1": "Test value 1",
+    "value2": "Test value 2",
+    "value3": "Test value 3",
+    "certKey": "certificate.key",
+    "cert": "certificate.pem",
+    "certpass": "myKeyPassword"
   },
-  "host": {
-	"domain": "myCoolDomain.com",
-	"port": "443",
-	"certKey": "certificate.key",
-	"cert": "certificate.pem",
-	"certpass": "myKeyPassword"
+  "dev": {
+    "value1": "Dev value 1",
+    "sql": {
+      "host": "dev.domain",
+      "port": "3306",
+      "user": "root",
+      "pass": "someAwesomePassword_dev"
+    },
+    "host": {
+      "domain": "dev.myCoolDomain.com",
+      "port": "443"
+    }
+  },
+  "stage": {
+    "value1": "Stage value 1",
+    "sql": {
+      "host": "stage.domain",
+      "port": "3306",
+      "user": "root",
+      "pass": "someAwesomePassword_stage"
+    },
+    "host": {
+      "domain": "stage.myCoolDomain.com",
+      "port": "443"
+    }
+  },
+  "prod": {
+    "value1": "Prod value 1",
+    "sql": {
+      "host": "prod.domain",
+      "port": "3306",
+      "user": "root",
+      "pass": "someAwesomePassword_prod"
+    },
+    "host": {
+      "domain": "prod.myCoolDomain.com",
+      "port": "443"
+    }
   }
 }
 ```

@@ -1,7 +1,15 @@
 {
-  "item1": "[[sql.host]]",
-  "item2": "[[sql.user]]",
-  "item3": "[[sql.pass]]",
-  "item4": "[[host.domain]]",
-  "item5": "[[cred.UNKNOWN]]"
+  "globaltest1": "[[global.value1]]",
+  "globaltest2": "[[global.value2]]",
+  "globaltest3": "[[global.value3]]",
+  
+  "envTest_value": "[[value1]]",
+  "sqlHost": "[[sql.host]]",
+  "sqlUser": "[[sql.user]]",
+  "sqlPass": "[[sql.pass]]",
+  "certKey": "[[global.certKey]]",
+  "certFile": "[[global.cert]]",
+  "certPass": "[[global.certpass]]",
+  
+  "directPath_notrans": "[[cred.UNKNOWN]]"
 }

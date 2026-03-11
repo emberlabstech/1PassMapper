@@ -1,15 +1,49 @@
 {
-  "sql": {
-	"host": "some.domain",
-	"port": "3306",
-	"user": "root",
-	"pass": "someAwesomePassword"
-  },
-  "host": {
-	"domain": "myCoolDomain.com",
-	"port": "443",
-	"certKey": "certificate.key",
-	"cert": "certificate.pem",
-	"certpass": "myKeyPassword"
-  }
+	"global": {
+		"value1": "Test value 1",
+		"value2": "Test value 2",
+		"value3": "Test value 3",
+		"certKey": "certificate.key",
+		"cert": "certificate.pem",
+		"certpass": "myKeyPassword"
+	},
+	"dev": {
+		"value1": "Dev value 1",
+		"sql": {
+			"host": "dev.domain",
+			"port": "3306",
+			"user": "root",
+			"pass": "someAwesomePassword_dev"
+		},
+		"host": {
+			"domain": "dev.myCoolDomain.com",
+			"port": "443"
+		}
+	},
+	"stage": {
+		"value1": "Stage value 1",
+		"sql": {
+			"host": "stage.domain",
+			"port": "3306",
+			"user": "root",
+			"pass": "someAwesomePassword_stage"
+		},
+		"host": {
+			"domain": "stage.myCoolDomain.com",
+			"port": "443"
+		}
+	},
+	"prod": {
+		"value1": "Prod value 1",
+		"sql": {
+			"host": "prod.domain",
+			"port": "3306",
+			"user": "root",
+			"pass": "someAwesomePassword_prod"
+		},
+		"host": {
+			"domain": "prod.myCoolDomain.com",
+			"port": "443"
+		}
+	}
 }
