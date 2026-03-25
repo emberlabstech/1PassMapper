@@ -34,19 +34,27 @@ sources for the same configuration file using for example environment as a diffe
 The format of the JSON source file is the same whether it's stored in the local file or 
 inside the JSON field in 1Password. 
 
+## Suggestions
+
+Please send any suggestions for features, updates etc to [info@emberlabs.tech](mailto:info@emberlabs.tech).
+
 ## Changelog
 
 ```plain text
-1.6.1   2026-03-10  Added "global" prefix to ignore the prefix setting for a common "global" section.
-                    Splitting the app into a few files.
-                    Updated docs.   
+1.6.3   ????-??-?? 
+
+1.6.2   2026-03-15 
+
+1.6.1   2026-03-10 Added "global" prefix to ignore the prefix setting for a common "global" section.
+                   Splitting the app into a few files.
+                   Updated docs.   
                     
-1.6.0   2026-02-10  Added -fieldname <string>   Flag to indicate which field to use for json data.     
-                    Added -setvalue <string>    To set a field to a new value. 
-                    Added -setfile <filename>   To set a field to a new value from file.
-                    Added -fieldtypes           To list the available field types. 
+1.6.0   2026-02-10 Added -fieldname <string>   Flag to indicate which field to use for json data.     
+                     Added -setvalue <string>    To set a field to a new value. 
+                     Added -setfile <filename>   To set a field to a new value from file.
+                     Added -fieldtypes           To list the available field types. 
                      
-1.5.0   2026-01-08  Introduced the -fieldcopy, copying a field's content to file,
+1.5.0   2026-01-08 Introduced the -fieldcopy, copying a field's content to file,
                     supporting items like certificate files and keys from 1Pass. 
  
 1.4.0   2025-12-14  Removed the dependency on CLI 1pass for native SDK support.
@@ -78,7 +86,7 @@ None specific.
 
     Usage of 1PassMapper:
     
-    ## General ## 
+    ### General flags ### 
     -version || -V      Display version.
 
     -v                  Increase the verbosity to show what tags are translated or not.
@@ -94,7 +102,7 @@ None specific.
     -in         string  Input file path - eg. "my-config-template.json"
     -out        string  Output file path - eg. "config.json"
 
-    ## 1Password specific ## 
+    ### 1Password specific flags ###
     -token      string  1Password Service Account token (optional; if empty, read from ~/.1passtoken)
     -tokenfile  string  The name of the 1pass token file to use, if different from the default (~/.1passtoken)  
     -vault      string  1Password vault name - eg. "CICD"
@@ -102,7 +110,7 @@ None specific.
     -fieldname  string  Which field to use for json data as source. (default: json)
     -fieldcopy  string  Copy the contents of the field name in string to the output file.
 
-    ## Setting / updating a field value in 1Password ##
+    ### Setting / updating a field value in 1Password ### 
     -fieldtype  string  The field type to use (Case sensitive - default: Text)
                         One of:   Text      Concealed   CreditCardType    CreditCardNumber  
                                   Phone     Url         Totp              Email   
@@ -155,7 +163,7 @@ The format with double `[[...]]` has been deliberately chosen not to conflict wi
 Please note that the -prefix <path>, will prepend the tags path by the dot-notation string you provide.  
 If you provide a `-prefix dev`, this would mean that `[[some.path]]` in your template becomes `[[dev.some.path]]` when referencing the credentials source JSON. 
 
-if a path is prefixed inside the tag with `raw:`, whatever is in the JSON will be inserted as-is.  
+if a path is prefixed inside the tag with `raw:` or `r:`, whatever is in the JSON will be inserted as-is.  
 If you have say an array of items, such as `[[raw:path.to.value]]`, then anything beyond that "value" would be inserted.
 
 Using the -prefix, thus allows you to build make files and other pipelines that are "environment" aware in a simple way.  
@@ -218,9 +226,12 @@ However, if you want to use a "generic" template, you could use the format:
 
 The `-prefix dev` would return "joe" for `[[nameList.1.name]]`, while `-prefix prod` would return "perry".
 
-## The "injson" / 1Password file
+## -injson / 1Password file
 
-The format is a normal JSON file, and all values should be strings for simplicity.
+The format is a normal JSON file, and all values should be strings for simplicity, 
+allowing for templating use without 1Password by specifying a local source of truth file, 
+such as that of of a staged production such as:    
+template + json -> intermediate + 1pass -> final.json  
 
 Example of a Json credentials file.
 

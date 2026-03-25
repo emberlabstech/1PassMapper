@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	
+
 	"github.com/1password/onepassword-sdk-go"
 	"github.com/tidwall/gjson"
 )
@@ -17,16 +17,16 @@ import (
 // fetch1PItem uses the 1Password Service Accounts SDK to fetch an item and return its JSON bytes.
 func fetch1PItem(token, vault, item string) ([]byte, error) {
 	fmt.Printf("Retreiving data from 1Pass for %s:%s\n", vault, item)
-	
+
 	if strings.TrimSpace(token) == "" {
 		return nil, fmt.Errorf("fetch1PItem: empty token")
 	}
 	if verbose > 0 {
 		fmt.Fprintf(os.Stderr, "fetch1PItem: vault=%q item=%q\n", vault, item)
 	}
-	
+
 	ctx := context.Background()
-	
+
 	client, err := onepassword.NewClient(
 		ctx,
 		onepassword.WithServiceAccountToken(token),
@@ -35,7 +35,7 @@ func fetch1PItem(token, vault, item string) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("fetch1PItem: create 1Password client: %w", err)
 	}
-	
+
 	// List vaults and find by Title (display name)
 	if verbose > 1 {
 		fmt.Fprintln(os.Stderr, "fetch1PItem: listing vaults")
@@ -47,7 +47,7 @@ func fetch1PItem(token, vault, item string) ([]byte, error) {
 	if len(vaults) == 0 {
 		return nil, fmt.Errorf("fetch1PItem: no vaults visible to this token")
 	}
-	
+
 	var vaultID string
 	for _, v := range vaults {
 		if verbose > 1 {
@@ -64,7 +64,7 @@ func fetch1PItem(token, vault, item string) ([]byte, error) {
 	if verbose > 0 {
 		fmt.Fprintf(os.Stderr, "fetch1PItem: using vaultID=%s for vault=%q\n", vaultID, vault)
 	}
-	
+
 	// List items in that vault and find by Title
 	if verbose > 1 {
 		fmt.Fprintf(os.Stderr, "fetch1PItem: listing items in vaultID=%s\n", vaultID)
@@ -76,7 +76,7 @@ func fetch1PItem(token, vault, item string) ([]byte, error) {
 	if len(items) == 0 {
 		return nil, fmt.Errorf("fetch1PItem: no items visible in vault %q (id=%s)", vault, vaultID)
 	}
-	
+
 	var itemID string
 	for _, it := range items {
 		if verbose > 1 {
@@ -93,14 +93,14 @@ func fetch1PItem(token, vault, item string) ([]byte, error) {
 	if verbose > 0 {
 		fmt.Fprintf(os.Stderr, "fetch1PItem: using itemID=%s for item=%q\n", itemID, item)
 	}
-	
+
 	// Get full item
 	full, err := client.Items().Get(ctx, vaultID, itemID)
 	if err != nil {
 		return nil, fmt.Errorf("fetch1PItem: get item %q (id=%s) in vault %q (id=%s): %w",
 			item, itemID, vault, vaultID, err)
 	}
-	
+
 	data, err := json.Marshal(full)
 	if err != nil {
 		return nil, fmt.Errorf("fetch1PItem: marshal item %q (id=%s): %w", item, itemID, err)
@@ -108,7 +108,7 @@ func fetch1PItem(token, vault, item string) ([]byte, error) {
 	if len(data) == 0 {
 		return nil, fmt.Errorf("fetch1PItem: marshaled item %q (id=%s) to empty JSON", item, itemID)
 	}
-	
+
 	if verbose > 1 {
 		fmt.Fprintf(os.Stderr, "fetch1PItem: successfully fetched item %q (id=%s)\n", item, itemID)
 	}
@@ -121,12 +121,12 @@ func fetch1PItem(token, vault, item string) ([]byte, error) {
 func extract1PField(fieldName string, opItemJSON []byte) (string, error) {
 	fieldList := MapRaw(string(opItemJSON), "fields")
 	result := ""
-	
+
 	// Default value.
 	if fieldName == "" {
 		fieldName = "json"
 	}
-	
+
 	// .fields: [ title: "json"? ]
 	if gjson.Get(string(opItemJSON), "fields").Raw != "" {
 		for _, field := range fieldList {
@@ -136,11 +136,11 @@ func extract1PField(fieldName string, opItemJSON []byte) (string, error) {
 			}
 		}
 	}
-	
+
 	if result != "" {
 		return result, nil
 	}
-	
+
 	return "", errors.New(`could not find a field named "` + fieldName + `" in the item`)
 }
 
@@ -166,9 +166,9 @@ func fieldCopyData(token, vault, item, field, outFile string) bool {
 		failf("failed to fetch 1Password item: %v for %s:%s", e, vault, item)
 		return false
 	}
-	
+
 	fmt.Printf("onePData : \n%s\n%v\n\n", onePdata)
-	
+
 	fieldData, e := extract1PField(field, onePdata)
 	if e != nil {
 		failf("failed to extract field \"%s\" from 1Password item: %v", field, e)
@@ -181,12 +181,12 @@ func fieldCopyData(token, vault, item, field, outFile string) bool {
 // setField updates or creates a field in a specified 1Password item within a given vault and returns success as a boolean.
 func setField(token, vault, item, field, value string) bool {
 	ctx := context.Background()
-	
+
 	token = strings.TrimSpace(token)
 	vault = strings.TrimSpace(vault)
 	item = strings.TrimSpace(item)
 	field = strings.TrimSpace(field)
-	
+
 	ft := "Text"
 	switch fieldType {
 	case "Text", "Concealed", "CreditCardType", "CreditCardNumber", "Phone", "Url", "Totp", "Email", "Reference", "SshKey", "Menu", "MonthYear", "Address", "Date":
@@ -197,18 +197,18 @@ func setField(token, vault, item, field, value string) bool {
 		failf("setField: invalid field type: %s", fieldType)
 		return false
 	}
-	
+
 	if verbose > 0 {
 		println("Vault      :", vault)
 		println("Item       :", item)
 		println("Field name :", ft, ":", field)
 	}
-	
+
 	if token == "" || vault == "" || item == "" || field == "" {
 		fmt.Fprintln(os.Stderr, "setField: token, vault, item, and field are required")
 		return false
 	}
-	
+
 	client, err := onepassword.NewClient(
 		ctx,
 		onepassword.WithServiceAccountToken(token),
@@ -218,7 +218,7 @@ func setField(token, vault, item, field, value string) bool {
 		fmt.Fprintf(os.Stderr, "setField: create 1Password client: %v\n", err)
 		return false
 	}
-	
+
 	// Resolve vault title -> vaultID
 	vaults, err := client.Vaults().List(ctx)
 	if err != nil {
@@ -236,7 +236,7 @@ func setField(token, vault, item, field, value string) bool {
 		fmt.Fprintf(os.Stderr, "setField: vault %q not found or not accessible\n", vault)
 		return false
 	}
-	
+
 	// Resolve item title -> itemID
 	items, err := client.Items().List(ctx, vaultID)
 	if err != nil {
@@ -254,14 +254,14 @@ func setField(token, vault, item, field, value string) bool {
 		fmt.Fprintf(os.Stderr, "setField: item %q not found in vault %q\n", item, vault)
 		return false
 	}
-	
+
 	// Get full item (SDK returns a value, not a pointer)
 	full, err := client.Items().Get(ctx, vaultID, itemID)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "setField: get item %q: %v\n", item, err)
 		return false
 	}
-	
+
 	// Update existing field (match by Title), otherwise append a new custom field.
 	updated := false
 	for i := range full.Fields {
@@ -271,7 +271,7 @@ func setField(token, vault, item, field, value string) bool {
 			break
 		}
 	}
-	
+
 	// Ensure all field IDs are present & unique ("" duplicates are a common culprit).
 	usedIDs := make(map[string]struct{}, len(full.Fields))
 	for i := range full.Fields {
@@ -286,7 +286,7 @@ func setField(token, vault, item, field, value string) bool {
 		}
 		usedIDs[id] = struct{}{}
 	}
-	
+
 	if !updated {
 		full.Fields = append(full.Fields, onepassword.ItemField{
 			ID:        newItemID(),
@@ -295,14 +295,14 @@ func setField(token, vault, item, field, value string) bool {
 			Value:     value,
 		})
 	}
-	
+
 	// Put expects (ctx, item)
 	_, err = client.Items().Put(ctx, full)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "setField: put item %q: %v\n", item, err)
 		return false
 	}
-	
+
 	if verbose > 0 {
 		fmt.Fprintf(os.Stderr, "setField: %s:%s updated field %q\n", vault, item, field)
 	}

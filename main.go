@@ -229,8 +229,8 @@ func replaceTagsWithJSONValues(input string, jsonPayload string) string {
 		if strings.Contains(loc[1], ":") {
 			tparts := strings.SplitN(loc[1], ":", 2)
 			path = tparts[1]
-			switch tparts[0] {
-			case "raw":
+			switch strings.ToLower(tparts[0]) {
+			case "raw", "r":
 				mode = 1
 			default:
 			}
