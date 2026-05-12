@@ -28,6 +28,8 @@ var prefix = ""
 var verbose = 0
 var fieldName string // Json field name
 var fieldType string // Json field name
+var blankReplace bool = false
+var preserves map[string]string = make(map[string]string)
 
 func main() {
 	// Get the home dir, and attach the default 1passtoken file.
@@ -42,7 +44,9 @@ func main() {
 	ver1 := flag.Bool("V", false, "Display version and quit (alias)")
 	verb := flag.Bool("v", false, "Be verbose about translations")
 	fty := flag.Bool("fieldtypes", false, "List the field types")
+	blank := flag.Bool("blank", false, "Replace unknown tags with an empty string")
 	verb1 := flag.Bool("vv", false, "Be even more verbose about translations")
+
 	tFile := flag.String("tokenfile", "", "Alternate token file to use.")
 	pfx := flag.String("prefix", "", "A path prefix to be added at the start of all tag paths")
 	ij := flag.String("injson", "", "Input JSON source file in case you do not want to use 1Password")
@@ -56,8 +60,13 @@ func main() {
 	fieldType = *flag.String("fieldtype", "Text", "The field type to use. (See -fieldtypes)")
 	setValue := flag.String("setvalue", "", "Set the fieldName to the Value of setValue <string>")
 	setFile := flag.String("setfile", "", "Set the fieldName to the Value of setFile <filename>")
+	preserve := flag.String("preserve", "", "Preserve the csv list of tag names.")
 
 	flag.Parse()
+
+	if *blank {
+		blankReplace = true
+	}
 
 	if *fty {
 		fmt.Println("Field types:")
@@ -73,6 +82,14 @@ func main() {
 		} else {
 			fmt.Printf("Can not read the file %s\n", tokenFile)
 			os.Exit(1)
+		}
+	}
+
+	// Preserve tag names.
+	if *preserve != "" {
+		parts := strings.Split(*preserve, ",")
+		for _, part := range parts {
+			preserves[`[[`+part+`]]`] = ""
 		}
 	}
 
@@ -252,7 +269,7 @@ func replaceTagsWithJSONValues(input string, jsonPayload string) string {
 			repval = val.Str
 		}
 
-		if val.Exists() {
+		if val.Exists() || blankReplace {
 			switch verbose {
 			case 1:
 				println("Translated    :", tag)
@@ -260,7 +277,13 @@ func replaceTagsWithJSONValues(input string, jsonPayload string) string {
 				println("Translated    :", tag, " --> ", repval)
 			default:
 			}
-			input = strings.ReplaceAll(input, tag, repval)
+			// Is the blanking enabled, and the tag is in the preserve list?
+			_, ok := preserves[tag]
+			if blankReplace && ok {
+				// Do nothing here, as we want to preserve the tag.
+			} else {
+				input = strings.ReplaceAll(input, tag, repval)
+			}
 		} else {
 			switch verbose {
 			case 1, 2:

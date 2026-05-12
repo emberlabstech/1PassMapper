@@ -1,10 +1,30 @@
 # 1PassMapper
 
-## LEGAL EXCLUSION for California, US
+## Copyright information
 
-This software is legally barred from use by any natural, public or legal entity in 
-California, US, due to the legal situation in California requiring any device or software 
-to have age verification.
+[© EmberLabs® (BY-SA) (Attribution, Share-alike)](https://emberlabs.tech/copyright/)
+
+- Similar to CC BY-SA
+- This license enables reusers to distribute, remix, adapt, and build upon the material in any medium or format, so long as attribution is given to the creator.
+- The license allows for commercial use.
+- If you remix, adapt, or build upon the material, you must license the modified material under identical terms.
+- A copy of the copyright license/terms must be retained as is in code or documents.
+- EmberLabs (BY-SA) includes the following elements:
+  - BY: Credit must be given to the creator.
+  - SA: Adaptations must be shared under the same terms.
+
+## LICENSE GRANT — GEOGRAPHIC RESTRICTIONS
+
+Permission to use, copy, modify, and distribute this software is granted
+subject to the following condition:
+
+This software may not be used, deployed, or operated in any jurisdiction
+where such use would require compliance with age verification mandates
+imposed on software operators or distributors, including but not limited
+to California (US), UK, Brazil. 
+
+Any use in violation of this restriction automatically terminates your
+license to use this software. 
 
 
 ## Why 1PassMapper? 
@@ -41,9 +61,10 @@ Please send any suggestions for features, updates etc to [info@emberlabs.tech](m
 ## Changelog
 
 ```plain text
-1.6.3   ????-??-?? 
+1.6.3   ????-??-?? Your request or addition goes here! =D
 
-1.6.2   2026-03-15 
+1.6.2   2026-05-12 Added the "-blank" flag to blank replace unreferenced flags.
+                    Added the "-preserve tagname1,tagname2,tagname3,..." csv list for tags not to be null-replaced.  
 
 1.6.1   2026-03-10 Added "global" prefix to ignore the prefix setting for a common "global" section.
                    Splitting the app into a few files.
@@ -103,6 +124,8 @@ None specific.
     -out        string  Output file path - eg. "config.json"
 
     ### 1Password specific flags ###
+    -blank              Replace all tags that are not found in the source file with an empty string.  
+    -preserve   string  Comma separated list of tags to preserve, eg. "dev,prod" for [[dev]] and [[prod]] (default: none)
     -token      string  1Password Service Account token (optional; if empty, read from ~/.1passtoken)
     -tokenfile  string  The name of the 1pass token file to use, if different from the default (~/.1passtoken)  
     -vault      string  1Password vault name - eg. "CICD"
@@ -331,16 +354,4 @@ config.json
 ```
 Noting that the path "cred.UNKNOWN" is not found in the source, and the tag will be left as-is. 
 
-## Copyright information
-
-[© EmberLabs® (BY-SA) (Attribution, Share-alike)](https://emberlabs.tech/copyright/)
-
-- Similar to CC BY-SA
-- This license enables reusers to distribute, remix, adapt, and build upon the material in any medium or format, so long as attribution is given to the creator.
-- The license allows for commercial use.
-- If you remix, adapt, or build upon the material, you must license the modified material under identical terms.
-- A copy of the copyright license/terms must be retained as is in code or documents.
-- EmberLabs (BY-SA) includes the following elements:
-  - BY: Credit must be given to the creator.
-  - SA: Adaptations must be shared under the same terms.
 
