@@ -61,7 +61,9 @@ Please send any suggestions for features, updates etc to [info@emberlabs.tech](m
 ## Changelog
 
 ```plain text
-1.6.3   ????-??-?? Your request or addition goes here! =D
+1.6.4   ????-??-?? Your request or addition goes here! =D
+
+1.6.3   2026-05-13 Adding "-predefined" for tags as -predefined <tag=value,...>
 
 1.6.2   2026-05-12 Added the "-blank" flag to blank replace unreferenced flags.
                     Added the "-preserve tagname1,tagname2,tagname3,..." csv list for tags not to be null-replaced.  
@@ -126,6 +128,7 @@ None specific.
     ### 1Password specific flags ###
     -blank              Replace all tags that are not found in the source file with an empty string.  
     -preserve   string  Comma separated list of tags to preserve, eg. "dev,prod" for [[dev]] and [[prod]] (default: none)
+    -predefined string  Comma separated list of tags to replace with predefined values, eg. "ROOT=./,..." (default: none)
     -token      string  1Password Service Account token (optional; if empty, read from ~/.1passtoken)
     -tokenfile  string  The name of the 1pass token file to use, if different from the default (~/.1passtoken)  
     -vault      string  1Password vault name - eg. "CICD"

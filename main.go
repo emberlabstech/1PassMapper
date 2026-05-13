@@ -19,7 +19,7 @@ import (
 	"path"
 	"regexp"
 	"strings"
-
+	
 	"github.com/tidwall/gjson"
 )
 
@@ -30,6 +30,7 @@ var fieldName string // Json field name
 var fieldType string // Json field name
 var blankReplace bool = false
 var preserves map[string]string = make(map[string]string)
+var predefines map[string]string = make(map[string]string)
 
 func main() {
 	// Get the home dir, and attach the default 1passtoken file.
@@ -39,14 +40,14 @@ func main() {
 		os.Exit(1)
 	}
 	tokenFile := home + "/.1passtoken"
-
+	
 	ver := flag.Bool("version", false, "Display version and quit")
 	ver1 := flag.Bool("V", false, "Display version and quit (alias)")
 	verb := flag.Bool("v", false, "Be verbose about translations")
 	fty := flag.Bool("fieldtypes", false, "List the field types")
 	blank := flag.Bool("blank", false, "Replace unknown tags with an empty string")
 	verb1 := flag.Bool("vv", false, "Be even more verbose about translations")
-
+	
 	tFile := flag.String("tokenfile", "", "Alternate token file to use.")
 	pfx := flag.String("prefix", "", "A path prefix to be added at the start of all tag paths")
 	ij := flag.String("injson", "", "Input JSON source file in case you do not want to use 1Password")
@@ -61,19 +62,33 @@ func main() {
 	setValue := flag.String("setvalue", "", "Set the fieldName to the Value of setValue <string>")
 	setFile := flag.String("setfile", "", "Set the fieldName to the Value of setFile <filename>")
 	preserve := flag.String("preserve", "", "Preserve the csv list of tag names.")
-
+	predef := flag.String("predefine", "", "Pre-define tags like -predefine ROOT=./ for '[[ROOT]]/config' -> './config'")
+	
 	flag.Parse()
-
+	
 	if *blank {
 		blankReplace = true
 	}
-
+	
+	// Register any predefined tags.
+	if *predef != "" {
+		parts := strings.Split(*predef, ",")
+		for _, part := range parts {
+			p := strings.SplitN(part, "=", 2)
+			if len(p) == 2 {
+				tag := strings.TrimSpace(p[0])
+				value := strings.TrimSpace(p[1])
+				predefines[tag] = value
+			}
+		}
+	}
+	
 	if *fty {
 		fmt.Println("Field types:")
 		fmt.Println("Text, Concealed|Password, CreditCardType, CreditCardNumber, Phone, Url, Totp, Email, Reference, SshKey, Menu, MonthYear, Address, Date")
 		os.Exit(0)
 	}
-
+	
 	// Decide token: use -token if provided; otherwise try ~/.1passtoken
 	token := strings.TrimSpace(*pass)
 	if token == "" {
@@ -84,7 +99,7 @@ func main() {
 			os.Exit(1)
 		}
 	}
-
+	
 	// Preserve tag names.
 	if *preserve != "" {
 		parts := strings.Split(*preserve, ",")
@@ -92,13 +107,13 @@ func main() {
 			preserves[`[[`+part+`]]`] = ""
 		}
 	}
-
+	
 	if *setValue != "" && *setFile != "" {
 		failf("Cannot specify both setValue and setFile")
 		println("Value updated.")
 		os.Exit(0)
 	}
-
+	
 	// Set a value from file?
 	if *setFile != "" {
 		fi, err := os.Stat(*setFile)
@@ -120,7 +135,7 @@ func main() {
 		println("Value updated.")
 		os.Exit(0)
 	}
-
+	
 	// Set a value?
 	if *setValue != "" {
 		if fieldName == "" {
@@ -132,13 +147,13 @@ func main() {
 		println("Value updated.")
 		os.Exit(0)
 	}
-
+	
 	// Version?
 	if *ver || *ver1 {
 		println("Version :", version)
 		os.Exit(0)
 	}
-
+	
 	// Verbose?
 	if *verb {
 		verbose = 1
@@ -146,17 +161,17 @@ func main() {
 	if *verb1 {
 		verbose = 2
 	}
-
+	
 	// Alt token file specified?
 	if *tFile != "" {
 		tokenFile = *tFile
 	}
-
+	
 	// A prefix has been specified? ( [[{nil|pfx.}path]] )
 	if *pfx != "" {
 		prefix = *pfx + "."
 	}
-
+	
 	// If infile and outfile is missing, complain...
 	if *fieldCopy == "" && (*inFile == "" || *outFile == "") {
 		failf("missing required flags: -in <file> and -out <file> are required")
@@ -165,17 +180,17 @@ func main() {
 	if *ij == "" && (*vault == "" || *item == "") {
 		failf("missing required flags: -vault <name> and -item <name> are required for 1Password.")
 	}
-
+	
 	if *fieldCopy != "" && *vault != "" && *item != "" && *outFile != "" {
 		fmt.Printf("Copying [%s:%s/%s] -> %s\n", *vault, *item, *fieldCopy, *outFile)
 		if !fieldCopyData(token, *vault, *item, *fieldCopy, *outFile) {
 			println("Error occurred. Could not copy the field.")
 			os.Exit(1)
 		}
-
+		
 		os.Exit(0)
 	}
-
+	
 	// Let's do some work with the rest using input files.
 	// ----------------------------------------------------------------------------
 	// Read input file
@@ -183,11 +198,11 @@ func main() {
 	if err != nil {
 		failf("failed to read input file: %v", err)
 	}
-
+	
 	// If we read creds from the local file, ignore 1Pass.
 	err = nil
 	var itemJSON []byte
-
+	
 	if *ij != "" {
 		itemJSON, err = os.ReadFile(*ij)
 		if err != nil {
@@ -205,7 +220,7 @@ func main() {
 			if e != nil {
 				failf("failed to fetch 1Password item: %v for %s:%s", e, *vault, itemName)
 			}
-
+			
 			onePjson, e := extract1PField(fieldName, onePdata)
 			if e != nil {
 				failf("failed to extract field \""+fieldName+"\" from 1Password item: %v", err)
@@ -215,7 +230,7 @@ func main() {
 			input = []byte(replaceTagsWithJSONValues(string(input), itemJSON))
 		}
 	}
-
+	
 	// Write output file
 	if err := os.WriteFile(*outFile, []byte(input), 0o644); err != nil {
 		failf("failed to write output file: %v", err)
@@ -231,17 +246,17 @@ func replaceTagsWithJSONValues(input string, jsonPayload string) string {
 		println("Unable to parse input JSON from 1Pass.")
 		os.Exit(1)
 	}
-
+	
 	// Matches [[anything-but-brackets]] capturing the inner path in group 1
 	re := regexp.MustCompile(`\[\[([^\[\]]+)\]\]`)
-
+	
 	// We need access to the captured group, so we can't just use ReplaceAllString.
 	for _, loc := range re.FindAllStringSubmatch(input, -1) {
 		tag := loc[0]
 		path := loc[1]
 		repval := ""
 		mode := 0
-
+		
 		// ":" tag in the path? Want to inject a full JSON structure?
 		if strings.Contains(loc[1], ":") {
 			tparts := strings.SplitN(loc[1], ":", 2)
@@ -252,9 +267,10 @@ func replaceTagsWithJSONValues(input string, jsonPayload string) string {
 			default:
 			}
 		}
-
+		
 		// Switch the modes here.
 		val := gjson.Result{}
+		hasValue := val.Exists()
 		// If global, get it from the global namespace and ignore the prefix.
 		// This allows common settings across prefixes without duplication.
 		if strings.HasPrefix(path, "global.") {
@@ -268,22 +284,29 @@ func replaceTagsWithJSONValues(input string, jsonPayload string) string {
 		default:
 			repval = val.Str
 		}
-
-		if val.Exists() || blankReplace {
+		
+		// Check if we have a predefined value for the tag, and if so, use it.
+		if val, ok := predefines[path]; ok {
+			hasValue = true
+			repval = val
+		}
+		
+		// Treat the exists as true if blankreplace is enabled
+		if !hasValue && blankReplace {
+			hasValue = true
+			repval = ""
+		}
+		
+		if hasValue {
 			switch verbose {
 			case 1:
 				println("Translated    :", tag)
 			case 2:
-				println("Translated    :", tag, " --> ", repval)
+				fmt.Printf("Translated    : %s -> '%s'\n", tag, repval)
 			default:
 			}
-			// Is the blanking enabled, and the tag is in the preserve list?
-			_, ok := preserves[tag]
-			if blankReplace && ok {
-				// Do nothing here, as we want to preserve the tag.
-			} else {
-				input = strings.ReplaceAll(input, tag, repval)
-			}
+			
+			input = strings.ReplaceAll(input, tag, repval)
 		} else {
 			switch verbose {
 			case 1, 2:
@@ -292,19 +315,19 @@ func replaceTagsWithJSONValues(input string, jsonPayload string) string {
 			}
 		}
 	}
-
+	
 	return input
 }
 
 // MapRaw - Get a Json subtree as a map
 func MapRaw(json string, path string) map[string]string {
 	vals := make(map[string]string, 0)
-
+	
 	result := gjson.Get(json, path)
 	result.ForEach(func(k, v gjson.Result) bool {
 		vals[k.String()] = v.Raw
 		return true // keep iterating
 	})
-
+	
 	return vals
 }
